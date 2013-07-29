@@ -140,7 +140,7 @@ class GF:
 		newPacket = buffer
 		return newPacket
 		
-	# buffer = (encodeNum1*p1)^(encodeNum1*p2)
+	# buffer = (encodeNum1*p1)^(encodeNum2*p2)
 	def encode_mul_XOR(self, p1, encodeNum1, p2, encodeNum2):
 		print"Enter encode_mul_XOR"
 		len1 = len(p1)
@@ -159,7 +159,7 @@ class GF:
 
 		# start multiply for p2
 		for j in range(len2):
-			buf1[j] = self.gfmul(buf1[j],encodeNum2)
+			buf2[j] = self.gfmul(buf2[j],encodeNum2)
 
 		print "start XOR low bites"
 		for i in range(small):
