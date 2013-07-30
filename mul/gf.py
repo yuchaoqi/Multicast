@@ -111,8 +111,10 @@ class GF:
 			#buffer[i] = buffer[0:i] + unichr( ord(buf1[i])^ ord(buf2[i]) ) + buffer[i+1:] 
 			#buffer[i] = unichr( ord(buf1[i])^ ord(buf2[i]) ) # unincode  16 hex
 			#print chr(buffer[i]) # ascII char 
+			
+			#convert buf1 and buf2 ALL TO int
 			flag1 = self.judge_intOrchar(buf1[i]) 
-			flag2 = self.judge_intOrchar(buf2[i]) 
+			flag2 = self.judge_intOrchar(buf2[i]) 			
 			if flag1 ==2:
 				temp1 = ord(buf1[i])
 			if flag2 ==2:
@@ -149,28 +151,45 @@ class GF:
 		small = len2 if (len1 > len2) else len1
 		print "bigLength is: %d,   smallLength is %d " %(big, small)
 		
-		# put the packet contents into string buffers
-		buf1 = p1
-		buf2 = p2
+		# put the packet contents into INT buffers
+		buf1 =['0'] * big
+		buf2 =['0'] * big
+		buffer = ['0'] * big
 		
+		#make sure encodeNum1 and encodeNum2 are numbers
+		flag1_num = self.judge_intOrchar(encodeNum1) 
+		if flag1_num ==2:
+			encodeNum1 = ord(encodeNum1)		
+		flag2_num = self.judge_intOrchar(encodeNum2) 
+		if flag2_num ==2:
+			encodeNum2 = ord(encodeNum2)
+			
 		# start multiply for p1
 		for i in range(len1):
-			buf1[i] = self.gfmul(buf1[i],encodeNum1)
-
-		# start multiply for p2
+			flag1 = self.judge_intOrchar(p1[i]) 
+			if flag1 ==2:
+				temp1 = ord(p1[i])
+				buf1[i] = self.gfmul(temp1,encodeNum1)
+		
+		# start multiply for p2		
 		for j in range(len2):
-			buf2[j] = self.gfmul(buf2[j],encodeNum2)
-
+			flag2 = self.judge_intOrchar(p2[j]) 
+			if flag2 ==2:
+				temp2 = ord(p2[j])
+				buf2[j] = self.gfmul(temp2,encodeNum2)		
+		# Here, buf1 and buf2 are all ascII code  10 oct 
+		
 		print "start XOR low bites"
 		for i in range(small):
-			buffer[i] = buf1[i]^buf2[i]
+			buffer[i] = chr(buf1[i]^buf2[i]) # int to chr
 			
 		print "start XOR high bites"
-		for j in range(small, big):
+		for k in range(small, big):			
 			if len1 > len2:
-				buffer[j] = buf1[j]^0
+				buffer[k] = chr(buf1[k]^0)
 			else:
-				buffer[j] = buf2[j]^0
+				buffer[k] = chr(buf2[k]^0)
+					
 		print "Over XOR"
 		
 		# put string buffer into packet and return packet object
@@ -179,41 +198,57 @@ class GF:
 
 		
 	# buffer = ((originPkt*encodeNum1)^(codedPkt))/encodeNum2
-	def decode_div_XOR( originPkt, encodeNum1, encodeNum2, codedPkt):
+	def decode_div_XOR( self, originPkt, encodeNum1, encodeNum2, codedPkt, len_to_decode):
 		print "Enter decode_div_XOR"
+		p1 = originPkt
+		p2 = codedPkt
 		len1 = len(p1)
 		len2 = len(p2)
 		big = len1 if (len1 > len2) else len2
 		small = len2 if (len1 > len2) else len1
 		print "bigLength is: %d,   smallLength is %d " %(big, small)
 		
-		# put the packet contents into string buffers
-		buf1 = p1
-		buf2 = p2
+		#make sure encodeNum1 and encodeNum2 are numbers
+		flag1_num = self.judge_intOrchar(encodeNum1) 
+		if flag1_num ==2:
+			encodeNum1 = ord(encodeNum1)		
+		flag2_num = self.judge_intOrchar(encodeNum2) 
+		if flag2_num ==2:
+			encodeNum2 = ord(encodeNum2)
+			
+		# put the packet contents into INT buffers
+		buf1 = ['0'] * big
+		buf2 = ['0'] * big
+		buffer = ['0'] * big
 		
 		# start mutiply for originPkt
 		for i in range(len1):
-			buf1[i] = self.gfmul(buf1[i],encodeNum1)
-		
+			flag1 = self.judge_intOrchar(p1[i]) 
+			if flag1 ==2:
+				temp1 = ord(p1[i])
+				buf1[i] = self.gfmul(temp1,encodeNum1)
+		for i in range(len2):
+			buf2[i] = ord(p2[i])
+		# Here, buf1 and buf2 are all ascII code  10 oct 
 
 		print "start XOR low bites"
 		for i in range(small):
-			buffer[i] = buf1[i] ^ buf2[i]
-
+			buffer[i] =(buf1[i]^buf2[i]) # buffer lower bits are INT
+			
 		print "start XOR high bites"
 		for j in range(small, big):
 			if len1 > len2:
 				buffer[j]  = buf1[j] ^0
 			else:
 				buffer[j] = buf2[j] ^0
-		print "Over XOR"
+		print "Over XOR"	
 		
 		# start divide for buffer to get originalPkt2
-		for k in range(len1):
-			buffer[i] = self.gfdiv(buffer[i],encodeNum2)
-		
+		result = ['0'] * len_to_decode
+		for k in range(len_to_decode):
+			result[k] = chr(self.gfdiv(buffer[k],encodeNum2))	
 		# put string buffer into packet and return packet object
-		newPacket = buffer
+		newPacket = result
 		return newPacket
 
 if __name__ == "__main__" :
@@ -256,23 +291,38 @@ if __name__ == "__main__" :
 	print sMUL
 	'''
 	
-	'''
+
 	# test for packets
 	p1 = 'sssssss'
 	p2 = 'ddddddddddd'
-	newP = gf.encode_mul_XOR(p1, 1, p2, 1)
-	originP1 = gf.decode_div_XOR(p2, 1, 1, newP)
-	print newP
+	len1 = len(p1)
+	len2 = len(p2)
+	encodeNum1 = 2
+	encodeNum2 = 1
+	encodePacket = gf.encode_mul_XOR(p1, encodeNum1, p2, encodeNum2)
+	originP1 = gf.decode_div_XOR(p2, encodeNum2, encodeNum1, encodePacket,len(p1))
+	originP2 = gf.decode_div_XOR(p1, encodeNum1, encodeNum2, encodePacket,len(p2))
+	print encodePacket
 	print originP1
+	print originP2
+	
+	
 	'''
-	
-	
 	# test for packets
 	p1 = 'sssssss'
 	p2 = 'ddddddddddd'
 	newP = gf.gf_XOR(p1,p2)
-	
 	originP1 = (gf.gf_XOR(newP, p2))[1:len(p1)]
 	print newP
 	print originP1
 	
+	print (ord('\x00')^23)
+	print (ord('\x00')^1)
+	print (ord('\x00')^0)
+	p3 = 'Linux c multicast data '
+	p4 = 'aaaaaaaaaaaaaaa'
+	newP = gf.gf_XOR(p3,p4)
+	originP1 = (gf.gf_XOR(newP, p4))[1:len(p3)]
+	print newP
+	print originP1
+	'''
